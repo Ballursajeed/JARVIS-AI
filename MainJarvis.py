@@ -126,7 +126,7 @@ class MainThread(QThread):
     def __init__(self):
         super(MainThread,self).__init__()
     def run(self):
-        self.beforeTaskExecution()
+        self.TaskExecution()
     
     def beforeTaskExecution(self):
         while True:
@@ -141,11 +141,16 @@ class MainThread(QThread):
         while True:
             query = self.takeCommand().lower()
             
-            if "open notepad" in query:
+        
+            if "open notepad" in query:    
                 path = "C:\\Program Files\\WindowsApps\\Microsoft.WindowsNotepad_11.2401.26.0_x64__8wekyb3d8bbwe\\Notepad\\Notepad.exe" 
                 os.startfile(path)
+            elif "close notepad" in query:     
+                speak("Closing notepad")
+                os.system("taskkill /f /im notepad.exe")
 
             elif "open adobe " in query:
+                speak("opening Adobe reader")
                 path = "C:\\Program Files\\Adobe\Acrobat DC\\Acrobat\\Acrobat.exe"
                 os.startfile(path)
             
@@ -301,10 +306,6 @@ class MainThread(QThread):
                     print(e)
                     speak("Sorry boss. I am not able to send the email at the moment")
             
-            elif "close notepad" in query:
-                speak("Closing notepad")
-                os.system("taskkill /f /im notepad.exe")
-            
             elif "set alaram" in query:
                 nn = int(datetime.datetime.now().hour)
                 if nn == 22:
@@ -423,8 +424,11 @@ class MainThread(QThread):
             else:
              api_key = "AIzaSyB6m5YN2v0BVUqFHiKsmGWJbOOVkPl3PfM"
              result = generate_content(query, api_key)
-             print(result)
-             speak(result)
+             if result:
+                clean_result = result.replace('*', '')  # Remove asterisks
+                print(clean_result)
+                speak(clean_result)
+             
 
             speak("sir, do you have any other work")
 
