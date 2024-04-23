@@ -19,7 +19,9 @@ from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
 import instaloader
+import subprocess
 import PyPDF2
+from bs4 import BeautifulSoup
 
 from twitterBot import tweet
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -121,6 +123,20 @@ def pdf_reader():
         page = pdfReader.pages[pg]
         text = page.extract_text()
         speak(text)
+def open_notepad():
+    try:
+        return subprocess.Popen(['notepad.exe'])
+    except FileNotFoundError:
+        print("Notepad is not installed or not found in the system PATH.")
+
+def write_to_notepad(content):
+    try:
+        notepad_process = open_notepad()
+        time.sleep(1)
+        pyautogui.typewrite(content)
+        print("Content written to Notepad successfully.")
+    except Exception as e:
+        print("An error occurred:", e)
 
 class MainThread(QThread):
     def __init__(self):
@@ -138,6 +154,7 @@ class MainThread(QThread):
 
     def TaskExecution(self):
         wishMe()
+        notepad_process = None  # Initialize variable to hold Notepad process
         while True:
             query = self.takeCommand().lower()
             
@@ -413,13 +430,44 @@ class MainThread(QThread):
                     speak("Ok sir")
  
             elif "can you calculate" in query or "calculate" in query:
-                speak("Say what you want to calculate, example: 3 plus 3")
+                if notepad_process:
+                  notepad_process.kill()
+                speak("Say what you want to calculate")
+                question = self.takeCommand().lower()
+                api_key = "AIzaSyB6m5YN2v0BVUqFHiKsmGWJbOOVkPl3PfM"
+                result = generate_content(question, api_key)
+                print(result)
+                write_to_notepad(result)
+            
+            elif "temperature" in query:
+                if "temperature in" in query:
+                    search = query.split('temperature in ')[1]
+                    url = f"https://www.google.com/search?q={search}"
+                    r = requests.get(url)
+                    data = BeautifulSoup(r.text, "html.parser")
+                    temp = data.find("div",class_="BNeawe").text
+                    speak(f"current temperature in {search} is {temp}")
+                else:
+                    search = "temperature in davanagere"
+                    url = f"https://www.google.com/search?q={search}"
+                    r = requests.get(url)
+                    data = BeautifulSoup(r.text, "html.parser")
+                    temp = data.find("div",class_="BNeawe").text
+                    speak(f"current {search} is {temp}")
 
             elif "shutdown jarvis" in query or "stop jarvis" in query:
                 speak("thanks for using me sir, have a good day")
-                sys.exit()
-            
-            
+                if notepad_process:
+                  notepad_process.kill()  # Close Notepad if it's open
+                break
+          
+            elif "write" in query or "prove" in query:
+                if notepad_process:
+                  notepad_process.kill()
+                api_key = "AIzaSyB6m5YN2v0BVUqFHiKsmGWJbOOVkPl3PfM"
+                result = generate_content(query, api_key)
+                print(result)
+                write_to_notepad(result)
 
             else:
              api_key = "AIzaSyB6m5YN2v0BVUqFHiKsmGWJbOOVkPl3PfM"

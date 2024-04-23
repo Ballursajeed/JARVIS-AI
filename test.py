@@ -1,5 +1,14 @@
-import datetime
-now = datetime.datetime.now()
-# Calculate the time 15 seconds ahead
-future_time = now + datetime.timedelta(seconds=15)
-future_time_str = future_time.strftime('%H:%M')
+from bs4 import BeautifulSoup
+import requests
+
+query = "the current temperature in mumbai"
+substring = query[query.index("temperature in mumbai"):]
+print(substring)
+
+   
+search = query.split('temperature in ')[1]
+url = f"https://www.google.com/search?q={query}"
+r = requests.get(url)
+data = BeautifulSoup(r.text, "html.parser")
+temp = data.find("div",class_="BNeawe").text
+print(f"current temperature in {search} is {temp}")
