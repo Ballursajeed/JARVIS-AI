@@ -13,7 +13,7 @@ import smtplib
 import sys
 import pyjokes
 import pyautogui
-import time
+import time 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -455,6 +455,15 @@ class MainThread(QThread):
                     temp = data.find("div",class_="BNeawe").text
                     speak(f"current {search} is {temp}")
 
+            elif "how to" in query:
+               from pywikihow import search_wikihow
+               how  = query
+               max_result = 1
+               how_to = search_wikihow(how,max_result)
+               assert len(how_to) == 1
+               how_to[0].print()
+               speak(how_to[0].summary)
+
             elif "shutdown jarvis" in query or "stop jarvis" in query:
                 speak("thanks for using me sir, have a good day")
                 if notepad_process:
@@ -466,8 +475,10 @@ class MainThread(QThread):
                   notepad_process.kill()
                 api_key = "AIzaSyB6m5YN2v0BVUqFHiKsmGWJbOOVkPl3PfM"
                 result = generate_content(query, api_key)
-                print(result)
+                speak("Ok sir here is the content for your query")
                 write_to_notepad(result)
+                print(result)
+                
 
             else:
              api_key = "AIzaSyB6m5YN2v0BVUqFHiKsmGWJbOOVkPl3PfM"
