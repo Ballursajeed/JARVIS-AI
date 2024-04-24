@@ -37,6 +37,7 @@ from jarvisUi import Ui_MainWindow
 engine = pyttsx3.init('sapi5')
 voices = engine.getProperty('voices')
 engine.setProperty('voices',voices[0].id)
+engine.setProperty("rate",195)
 
 contacts = {
     "sajid": "sajeedballur2@gmail.com",
@@ -416,6 +417,12 @@ class MainThread(QThread):
                 
             elif "read pdf" in query:
                 pdf_reader()       
+            
+            elif "how much battery i left" in query or "how much power we have" in query or "battery" in query:
+                import psutil
+                bettery = psutil.sensors_battery()
+                percentage = bettery.percent
+                speak(f"Sir our system have {percentage} percent bettery")
             
             elif "hide all files" in query or "hide this folder" in query or "visible for everyone" in query:
                 speak("sir please tell me you want to hide this folder or make it visible for everyone")
