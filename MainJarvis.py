@@ -423,6 +423,15 @@ class MainThread(QThread):
                 bettery = psutil.sensors_battery()
                 percentage = bettery.percent
                 speak(f"Sir our system have {percentage} percent bettery")
+                if percentage >= 75:
+                    speak("Sir we have enough power to continue our work")
+                elif percentage>=40 and percentage <= 75:
+                    speak("Sir we can connect our system to charging point to charge our battery")
+                elif percentage >= 15 and percentage <= 30:
+                    speak("we don't have enough power to work, please connect to charging")
+                elif percentage <= 15:
+                    speak("We have very low, please connect to charging the system will shutdown very soon")
+                    
             
             elif "hide all files" in query or "hide this folder" in query or "visible for everyone" in query:
                 speak("sir please tell me you want to hide this folder or make it visible for everyone")
