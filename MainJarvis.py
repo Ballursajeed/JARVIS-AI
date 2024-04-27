@@ -22,6 +22,9 @@ import instaloader
 import subprocess
 import PyPDF2
 from bs4 import BeautifulSoup
+import speedtest
+import math
+
 
 from twitterBot import tweet
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -431,8 +434,22 @@ class MainThread(QThread):
                     speak("we don't have enough power to work, please connect to charging")
                 elif percentage <= 15:
                     speak("We have very low, please connect to charging the system will shutdown very soon")
-                    
             
+            elif "internet speed" in query:
+                speak("Please wait sir, i am checkimng internet speed")
+                def convert_to_mbps(speed_bps):
+                  return speed_bps / 1_000_000
+                st = speedtest.Speedtest()
+                dl_bps = st.download()
+                up_bps = st.upload()
+                dl_mbps = convert_to_mbps(dl_bps)
+                up_mbps = convert_to_mbps(up_bps)
+                
+                dl_mbps_rounded = round(dl_mbps, 2)
+                up_mbps_rounded = round(up_mbps, 2)
+                
+                speak(f"Sir we have {dl_mbps_rounded} MB per second downloading speed and {up_mbps_rounded} MB per second uploading speed")
+                    
             elif "hide all files" in query or "hide this folder" in query or "visible for everyone" in query:
                 speak("sir please tell me you want to hide this folder or make it visible for everyone")
                 condition = self.takeCommand().lower()
