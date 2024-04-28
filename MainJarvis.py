@@ -39,7 +39,7 @@ from jarvisUi import Ui_MainWindow
 
 engine = pyttsx3.init('sapi5')
 voices = engine.getProperty('voices')
-engine.setProperty('voices',voices[0].id)
+engine.setProperty('voice',voices[0].id)
 engine.setProperty("rate",195)
 
 contacts = {
@@ -146,16 +146,14 @@ class MainThread(QThread):
     def __init__(self):
         super(MainThread,self).__init__()
     def run(self):
-        self.TaskExecution()
-    
-    def beforeTaskExecution(self):
+        #self.TaskExecution()
         while True:
             permission = self.takeCommand().lower()
-            if "wake up" in permission:
+            if "wake up" in permission or "hey jarvis" in permission:
                 self.TaskExecution()
             elif "good bye" in permission or "sleep jarvis" in permission or "shutdown jarvis" in permission:
                 sys.exit()
-
+        
     def TaskExecution(self):
         wishMe()
         notepad_process = None  # Initialize variable to hold Notepad process
@@ -193,9 +191,10 @@ class MainThread(QThread):
                     cv2.imshow('webcam',img)
                     k = cv2.waitKey(50)
                     if k==27:
-                        break;
+                        break
                 cad.release()
                 cv2.destroyAllWindows()
+            
             elif 'play music' in query:
                 music_dir = "C:\\Users\\SHASHANK AMITH\\Music"
                 song = os.listdir(music_dir)
