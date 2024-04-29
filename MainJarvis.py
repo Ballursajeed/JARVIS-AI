@@ -324,12 +324,16 @@ class MainThread(QThread):
                     print(e)
                     speak("Sorry boss. I am not able to send the email at the moment")
             
-            elif "set alaram" in query:
-                nn = int(datetime.datetime.now().hour)
-                if nn == 22:
-                    music_dir = "C:\\Users\\SHASHANK AMITH\\Music"
-                    songs = os.listdir(music_dir)
-                    os.startfile(os.path.join(music_dir, songs[0])) 
+            elif "set alarm" in query:
+                speak("Sir Please tell me the time to set alarm. for example , set alarm to 5:30 AM")
+                tt = self.takeCommand().lower()
+                print(tt)
+                tt = tt.replace("set alarm to ","")
+                tt = tt.replace(".","")
+                tt = tt.upper()
+                print(tt)
+                import MyAlarm
+                MyAlarm.alarm(tt)
 
             elif "tell me a joke" in query:
                 joke = pyjokes.get_joke()
