@@ -23,8 +23,6 @@ import subprocess
 import PyPDF2
 from bs4 import BeautifulSoup
 import speedtest
-import math
-
 
 from twitterBot import tweet
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -486,7 +484,15 @@ class MainThread(QThread):
                     data = BeautifulSoup(r.text, "html.parser")
                     temp = data.find("div",class_="BNeawe").text
                     speak(f"current {search} is {temp}")
-
+            elif "volume up" in query:
+                pyautogui.press("volumeup")
+            
+            elif "volume down" in query:
+                pyautogui.press("volumedown")
+            
+            elif "volume mute" in query:
+                pyautogui.press("volumemute")
+            
             elif "how to" in query:
                from pywikihow import search_wikihow
                how  = query
