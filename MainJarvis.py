@@ -463,6 +463,22 @@ class MainThread(QThread):
                 elif "leave it" in condition or "leave for now" in condition:
                     speak("Ok sir")
  
+            elif "open mobile camera" in query:
+                import urllib.request
+                import cv2
+                import numpy as np
+                import time
+                URL = "http://100.102.167.171:8080/shot.jpg"
+                while True:
+                    img_arr = np.array(bytearray(urllib.request.urlopen(URL).read()),dtype=np.uint8)
+                    img = cv2.imdecode(img_arr,-1)
+                    cv2.imshow("IPWebcam",img)
+                    q = cv2.waitKey(1)
+                    if q == ord("q"):
+                        break;
+                
+                cv2.destroyAllWindows()
+ 
             elif "can you calculate" in query or "calculate" in query:
                 if notepad_process:
                   notepad_process.kill()
