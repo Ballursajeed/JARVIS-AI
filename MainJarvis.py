@@ -125,6 +125,7 @@ def pdf_reader():
         page = pdfReader.pages[pg]
         text = page.extract_text()
         speak(text)
+
 def open_notepad():
     try:
         return subprocess.Popen(['notepad.exe'])
@@ -134,11 +135,12 @@ def open_notepad():
 def write_to_notepad(content):
     try:
         notepad_process = open_notepad()
-        time.sleep(1)
-        pyautogui.typewrite(content)
-        print("Content written to Notepad successfully.")
+        time.sleep(1)  # Wait for Notepad to open
+        pyautogui.write(content, interval=0.05)  # Write content with a slight delay between keystrokes
+        speak("Content written to Notepad successfully.")
     except Exception as e:
         print("An error occurred:", e)
+        return False
 
 class MainThread(QThread):
     def __init__(self):
@@ -147,7 +149,7 @@ class MainThread(QThread):
         #self.TaskExecution()
         while True:
             permission = self.takeCommand().lower()
-            if "wake up" in permission or "hey jarvis" in permission:
+            if "wake up" in permission or "hey jarvis" in permission or "jarvis" in permission:
                 self.TaskExecution()
             elif "good bye" in permission or "sleep jarvis" in permission or "shutdown jarvis" in permission:
                 sys.exit()
@@ -534,10 +536,12 @@ class MainThread(QThread):
                 api_key = "AIzaSyB6m5YN2v0BVUqFHiKsmGWJbOOVkPl3PfM"
                 result = generate_content(query, api_key)
                 speak("Ok sir here is the content for your query")
-                write_to_notepad(result)
+                (write_to_notepad(result))
                 print(result)
+                  
                 
-
+                
+           
             else:
              api_key = "AIzaSyB6m5YN2v0BVUqFHiKsmGWJbOOVkPl3PfM"
              result = generate_content(query, api_key)
