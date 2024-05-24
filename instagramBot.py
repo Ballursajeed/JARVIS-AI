@@ -12,12 +12,18 @@ import time
 
 import json
 import requests
+import tkinter as tk
+from tkinter import filedialog
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
 #Welcome7867    fbpageID=294285857108535  ig_user_id = 17841458305592495
 
 #accesss_token:EAAGkWZBMh3GUBO4dq6VZADIZApnedTxuiCA9NO9J4aHGsIEcrVmdyxxTJCP2cmp9lxUPTn7WqbikiT1E2YsPy1kTXt0wZAd3CcXklboeY6F0VnfB776E2AwX81NEeN4DNuZB3kTZBe3NcM1P0AK4zS2CETsexiJdajgzcmLZCvC3GDE3JmR0jU8ly8DSWkaYkFbFgD6lKpqNOrR1sOJZASLpm4pQOwZDZD
 #accessToken: EAAGkWZBMh3GUBO3hNbV3uaKZAubdJd8jQf5dgGsGcpZB7RTkByCmxqlLhXDXEZBwOjjgCN733PJvlqC1ZB3VwNiQV3WgtsVZBdwVrk9Qq6XwO1bIzQ5i70b2ZACY30IISjb3pPV9DiMt6DxVZBmCh6mhf8F42UrPdxYR63Camz3iKY0aHBb1HqsDZCZCAG9sxNzjTf
 '''def post_on_instagram(message, image_path):
-    username, password = "zipbag_786", "jarvisai"
+    username, password = "", ""
 
     option = Options()
     option.add_argument("start-maximized")
@@ -95,6 +101,44 @@ import requests
 # Example usage
 post_on_instagram("This is a test post!", "/path/to/your/image.jpg")'''
 
+# Configure your Cloudinary credentials
+
+def upload_image_to_cloudinary(file_path):
+    """Uploads an image to Cloudinary and returns the URL."""
+    try:
+        response = cloudinary.uploader.upload(file_path)
+        url = response.get('url')
+        return url
+    except Exception as e:
+        print(f"Failed to upload {file_path}: {e}")
+        return None
+
+def select_and_upload_image():
+    """Open a file dialog to select an image, upload it to Cloudinary, and print the URL."""
+    # Open file dialog to select an image
+    file_path = filedialog.askopenfilename(
+        title="Select Image",
+        filetypes=[("Image files", "*.png;*.jpg;*.jpeg;*.gif;*.bmp"), ("All files", "*.*")]
+    )
+
+    if file_path:
+        # Upload the selected image to Cloudinary and print the URL
+        url = upload_image_to_cloudinary(file_path)
+        print(type(file_path))
+        if url:
+            print(f"Uploaded {file_path} to {url}")
+            return url
+        else:
+            print(f"Failed to upload {file_path}")
+            return "Failed To upload"
+    else:
+        print("No file selected.")
+        return 'No file Selected'
+
+# Create a simple GUI window
+root = tk.Tk()
+root.withdraw()  # Hide the root window
+
 def post_image( imge_url):
     access_token = "EAAGkWZBMh3GUBO3hNbV3uaKZAubdJd8jQf5dgGsGcpZB7RTkByCmxqlLhXDXEZBwOjjgCN733PJvlqC1ZB3VwNiQV3WgtsVZBdwVrk9Qq6XwO1bIzQ5i70b2ZACY30IISjb3pPV9DiMt6DxVZBmCh6mhf8F42UrPdxYR63Camz3iKY0aHBb1HqsDZCZCAG9sxNzjTf"
     ig_user_id = "17841458305592495"
@@ -123,7 +167,16 @@ def post_image( imge_url):
         print("image publish to intagram")
     else:
         print("image posting is not possible!")
+        
+url = select_and_upload_image()
+post_image(url)
     
-imge_url = "https://pbs.twimg.com/media/GKF1pPiXcAE_KOc?format=jpg&name=small"   
-post_image(imge_url)
-time.sleep(20)
+
+
+
+
+
+
+
+
+

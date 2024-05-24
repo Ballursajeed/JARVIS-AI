@@ -1,8 +1,0 @@
-Ultra Bot AI 5G - name
-airtelnet - apn
-server - www.google.com
-auth - pap or chap
-apn protocol - ipv4/6
-roaming pro - ipv4/6
-bearer - lte,evdo_0 , default
-mobile virtual type - imsi

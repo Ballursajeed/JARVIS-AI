@@ -23,6 +23,7 @@ import subprocess
 import PyPDF2
 from bs4 import BeautifulSoup
 import speedtest
+from dotenv import load_dotenv
 
 from twitterBot import tweet
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -34,6 +35,14 @@ from PyQt5.QtWidgets import *
 from PyQt5.uic import loadUiType
 from jarvisUi import Ui_MainWindow
 
+import tkinter as tk
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+import json
+
+# Load environment variables from .env file
+load_dotenv()
 
 engine = pyttsx3.init('sapi5')
 voices = engine.getProperty('voices')
@@ -59,6 +68,13 @@ def speak(audio):
     engine.say(audio)
     engine.runAndWait()
     
+# Configure your Cloudinary credentials
+cloudinary.config(
+  cloud_name = os.getenv('CLOUDINARY_CLOUD_NAME'),
+  api_key = os.getenv('CLOUDINARY_API_KEY'),
+  api_secret = os.getenv('CLOUDINARY_API_SECRET')
+)
+
 
 def wishMe():
     hour = int(datetime.datetime.now().hour)
@@ -133,6 +149,7 @@ def open_notepad():
         print("Notepad is not installed or not found in the system PATH.")
 
 def write_to_notepad(content):
+    
     try:
         notepad_process = open_notepad()
         time.sleep(1)  # Wait for Notepad to open
@@ -142,7 +159,60 @@ def write_to_notepad(content):
         print("An error occurred:", e)
         return False
 
+def upload_image_to_cloudinary( file_path):
+        try:
+            response = cloudinary.uploader.upload(file_path)
+            url = response.get('url')
+            return url
+        except Exception as e:
+            print(f"Failed to upload {file_path}: {e}")
+            return None
+
+def post_image( image_url):
+    access_token = os.getenv('ACCESS_TOKEN')
+    ig_user_id = os.getenv('IG_USER_ID')
+    post_url = 'https://graph.facebook.com/v20.0/{}/media'.format(ig_user_id)
+    payload = {
+        'image_url': image_url,
+        'caption': 'a test posting',
+        'access_token': access_token,
+    }
+
+    r = requests.post(post_url, data=payload)
+    print(r.text)
+    print("Media uploaded successfully!")
+
+    result = json.loads(r.text)
+    if 'id' in result:
+        creation_id = result['id']
+        second_url = 'https://graph.facebook.com/v20.0/{}/media_publish'.format(ig_user_id)
+        second_payload = {
+            'creation_id': creation_id,
+            'access_token': access_token,
+        }
+        r = requests.post(second_url, data=second_payload)
+        print(r.text)
+        print("image published to Instagram")
+    else:
+        print("Image posting is not possible!")
+
+def select_and_post_image(file_path):
+        if file_path:
+            speak("Uploading the image to Cloudinary.")
+            image_url = upload_image_to_cloudinary(file_path)
+            if image_url:
+                speak("Image uploaded successfully. Posting to Instagram.")
+                post_image(image_url)
+                speak("Image has been posted to Instagram successfully.")
+            else:
+                speak("Failed to upload the image to Cloudinary.")
+        else:
+            speak("No image selected.")
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+
 class MainThread(QThread):
+
     def __init__(self):
         super(MainThread,self).__init__()
     def run(self):
@@ -159,8 +229,7 @@ class MainThread(QThread):
         notepad_process = None  # Initialize variable to hold Notepad process
         while True:
             query = self.takeCommand().lower()
-            
-        
+           
             if "open notepad" in query:    
                 path = "C:\\Program Files\\WindowsApps\\Microsoft.WindowsNotepad_11.2401.26.0_x64__8wekyb3d8bbwe\\Notepad\\Notepad.exe" 
                 os.startfile(path)
@@ -539,9 +608,11 @@ class MainThread(QThread):
                 (write_to_notepad(result))
                 print(result)
                   
-                
-                
-           
+            elif "post on instagram" in query:
+               speak("please select the image sir")
+               imga_path = self.select_image()
+               select_and_post_image(imga_path)
+               
             else:
              api_key = "AIzaSyB6m5YN2v0BVUqFHiKsmGWJbOOVkPl3PfM"
              result = generate_content(query, api_key)
@@ -550,7 +621,6 @@ class MainThread(QThread):
                 print(clean_result)
                 speak(clean_result)
              
-
             speak("sir, do you have any other work")
 
     def takeCommand(self):
@@ -567,6 +637,10 @@ class MainThread(QThread):
             print("Say that again please....")
             return "None"
         return query
+    def select_image(self):
+        # Function to open a file dialog and select an image
+        file_path, _ = QFileDialog.getOpenFileName(None, "Select Image", "", "Image Files (*.png *.jpg *.jpeg *.gif *.bmp);;All Files (*)")
+        return file_path
 
 startExecution = MainThread()
 
@@ -577,6 +651,7 @@ class Main(QMainWindow):
         self.ui.setupUi(self)
         self.ui.pushButton.clicked.connect(self.startTask)
         self.ui.pushButton_2.clicked.connect(self.close)
+        self.main_thread = MainThread()
      
     def startTask(self):
         self.ui.movie = QtGui.QMovie("7LP8.gif")
