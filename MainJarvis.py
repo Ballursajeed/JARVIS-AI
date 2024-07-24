@@ -2,7 +2,6 @@ import pyttsx3
 import speech_recognition as sr
 import datetime
 import os
-import cv2
 import random
 from requests import get
 import requests
@@ -41,6 +40,8 @@ import cloudinary.uploader
 import cloudinary.api
 import json
 
+from twilio.rest import Client
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -52,6 +53,7 @@ engine.setProperty("rate",195)
 contacts = {
     "sajid": "sajeedballur2@gmail.com",
     "shashank": "ysshashank42@gmail.com",
+    "raghu":"Nraghavendra2003@gmail.com",
     "Bob": "bob@example.com",
     # Add more contacts as needed
 }
@@ -61,9 +63,15 @@ phone = {
   "shashank": "+919008915360",
   "sanju":"+919035329887",
   "abbu": "+919535809127",
+  "sajid":"+919880580629",
+  "raghu":"+919986495713",
+  "my mother":"+918867062318",
+  "amith":"+919113877757",
+  "rihan":"+919620545756",
 }
 
 def speak(audio):
+    jarvis.update_status(f"Output: {audio}")
     print(audio)
     engine.say(audio)
     engine.runAndWait()
@@ -75,25 +83,37 @@ cloudinary.config(
   api_secret = os.getenv('CLOUDINARY_API_SECRET')
 )
 
+account_sid = os.getenv('ACCOUNT_SID')
+auth_token = os.getenv('AUTH_TOKEN')
+client = Client(account_sid, auth_token)
 
 def wishMe():
     hour = int(datetime.datetime.now().hour)
     stsTime = datetime.datetime.now().strftime('%H:%M:%S')
+    search = "temperature in davanagere"
+    url = f"https://www.google.com/search?q={search}"
+    r = requests.get(url)
+    data = BeautifulSoup(r.text, "html.parser")
+    temp = data.find("div",class_="BNeawe").text
     if(hour>=0 and hour<12): 
         speak(f"Good Morning, it is {stsTime}")
+        speak(f"the temperature is {temp}")
     elif hour>=12 and hour<18:
         speak(f"Good Afternoon, it is {stsTime} ")
+        speak(f"the temperature is {temp}")
+        
     else:
         speak(f"Good Evening, it is {stsTime}")
+        speak(f"the temperature is {temp}")
 
     speak("I am Jarvis Sir. Please Tell me how may i help you!")
 
-def sendEmail(to, content): #iudwdwspwpgmlcfs
+def sendEmail(to, content): 
     server = smtplib.SMTP('smtp.gmail.com',587)
     server.ehlo()
     server.starttls()
-    server.login('ballursajeed@gmail.com','iudwdwspwpgmlcfs')
-    server.sendmail('ballursajeed@gmail.com',to,content)
+    server.login(os.getenv("SMTP_USERNAME"),os.getenv("SMTP_PASSWORD"))
+    server.sendmail('sajeedballur2@gmail.com',to,content)
     server.close()
 
 def news():
@@ -147,6 +167,7 @@ def open_notepad():
         return subprocess.Popen(['notepad.exe'])
     except FileNotFoundError:
         print("Notepad is not installed or not found in the system PATH.")
+
 
 def write_to_notepad(content):
     
@@ -207,65 +228,125 @@ def select_and_post_image(file_path):
             else:
                 speak("Failed to upload the image to Cloudinary.")
         else:
-            speak("No image selected.")
+            speak("No image selected.")    
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+def get_weather(city):
+    api_key = "3e8adf17e22095a48df3332cf8ce34b3"  # replace with your actual API key
+    base_url = "http://api.openweathermap.org/data/2.5/weather?"
+    complete_url = base_url + "appid=" + api_key + "&q=" + city
+    response = requests.get(complete_url)
+    weather_data = response.json()
+    
+    if weather_data["cod"] != "404":
+        main = weather_data["main"]
+        weather = weather_data["weather"]
+        temperature = main["temp"] - 273.15  # convert from Kelvin to Celsius
+        pressure = main["pressure"]
+        humidity = main["humidity"]
+        weather_description = weather[0]["description"]
+        weather_report = (f"Temperature in {city} {temperature:.2f}°C\n"
+                          f"Atmospheric Pressure is {pressure} hPa\n"
+                          f"Humidity is {humidity}%\n"
+                          f"Weather Description: {weather_description}")
+        return weather_report
+    else:
+        return "City Not Found"
+    
+def openGoogle(cm):
+    webbrowser.open(f"https://www.google.com/search?q={cm}")
+    speak(f"Searching on Google about {cm}.... ")
+    
+import subprocess
+
+def open_powerpoint():
+    # You might need to find the actual path to PowerPoint.exe on your machine
+    # The following path is a common installation path for Office 365, but it may vary.
+    path = "C:\\Program Files\\Microsoft Office\\root\\Office16\\POWERPNT.EXE"
+    
+    if os.path.exists(path):
+        subprocess.Popen([path])
+    else:
+        speak("PowerPoint executable not found at the specified path")
+        
+def open_msword():
+    path = "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE"
+    if os.path.exists(path):
+        subprocess.Popen([path])
+    else:
+        speak("Microsoft Word executable not found at the specified path")
 
 class MainThread(QThread):
+    def __init__(self, update_status_callback):
+        super(MainThread, self).__init__()
+        self.update_status_callback = update_status_callback
 
-    def __init__(self):
-        super(MainThread,self).__init__()
     def run(self):
-        #self.TaskExecution()
-        while True:
-            permission = self.takeCommand().lower()
-            if "wake up" in permission or "hey jarvis" in permission or "jarvis" in permission:
-                self.TaskExecution()
-            elif "good bye" in permission or "sleep jarvis" in permission or "shutdown jarvis" in permission:
-                sys.exit()
-        
+        self.TaskExecution()
+
     def TaskExecution(self):
         wishMe()
-        notepad_process = None  # Initialize variable to hold Notepad process
+        notepad_process = None
         while True:
             query = self.takeCommand().lower()
-           
-            if "open notepad" in query:    
-                path = "C:\\Program Files\\WindowsApps\\Microsoft.WindowsNotepad_11.2401.26.0_x64__8wekyb3d8bbwe\\Notepad\\Notepad.exe" 
+            if "open notepad" in query:
+                speak("Opening NotePad")
+                path = "C:\\Program Files\\WindowsApps\\Microsoft.WindowsNotepad_11.2405.13.0_x64__8wekyb3d8bbwe\\Notepad\\Notepad.exe"
                 os.startfile(path)
-            elif "close notepad" in query:     
+            elif "close notepad" in query:
                 speak("Closing notepad")
                 os.system("taskkill /f /im notepad.exe")
-
-            elif "open adobe " in query:
+            elif "open pdf reader " in query or "open reader" in query or "open adobe" in query:
                 speak("opening Adobe reader")
-                path = "C:\\Program Files\\Adobe\Acrobat DC\\Acrobat\\Acrobat.exe"
+                path = "C:\\Program Files\\Adobe\\Acrobat DC\\Acrobat\\Acrobat.exe"
                 os.startfile(path)
             
-            elif "close adobe" in query:
+            elif "close pdf reader" in query or "close reader" in query or "close adobe" in query:
                 speak("Closing Adobe")
                 os.system("taskkill /f /im Acrobat.exe")
+    
+            elif "open power point" in query or "open powerpoint" in query:
+                speak("opening power point")
+                open_powerpoint()
             
+            elif "close power point" in query or "close powerpoint" in query:
+                speak("Closing PowerPoint")
+                subprocess.call(["taskkill", "/F", "/IM", "POWERPNT.EXE"])
+                
+            elif "close ms word" in query or "close msword" in query:
+                speak("Closing Microsoft Word")
+                subprocess.call(["taskkill", "/F", "/IM", "WINWORD.EXE"])
+                
+            elif "open ms word" in query or "open word" in query or "open msword" in query:
+                speak("opening Ms word")
+                open_msword()
+             
             elif "open command prompt" in query:
                 os.system("start cmd")
             
-            elif "close command prompt" in query:
+            elif "close command prompt" in query or "close command plant" in query or " close command" in query:
                 speak("Closing command prompt")
                 os.system("taskkill /f /im cmd.exe")
             
+            elif "what is your name" in query or "whats your name" in query or "your name" in query:
+                speak("My Name is JARVIS, a virtual artificial intelligence")
+            
+            elif "who are you" in query or "hu r u" in query:
+                speak("I am JARVIS, a virtual artificial intelligence, I am not a specific person or entity, but rather a collection of algorithms and data that allows me to learn and perform various language-related tasks and I am here to assist you  ")
+            
             elif "open camera" in query:
-                cad = cv2.VideoCapture(0)
+                import cv2
+                cap = cv2.VideoCapture(0)
                 while True:
-                    ret, img = cad.read()
+                    ret, img = cap.read()
                     cv2.imshow('webcam',img)
                     k = cv2.waitKey(50)
-                    if k==27:
+                    if k==27: #press esc
                         break
-                cad.release()
+                cap.release()
                 cv2.destroyAllWindows()
-            
+                            
             elif 'play music' in query:
-                music_dir = "C:\\Users\\SHASHANK AMITH\\Music"
+                music_dir = "C:\\Users\\ballu\\Music"
                 song = os.listdir(music_dir)
                 rd = random.choice(song)
                 for s in song:
@@ -286,19 +367,23 @@ class MainThread(QThread):
                     speak("opening youtube..")
                     webbrowser.open("youtube.com")
                     
+            elif 'open chrome' in query:
+                   speak("what should i search on google?")
+                   cm = self.takeCommand().lower()
+                   openGoogle(cm)
+                    
             elif 'open google' in query:
-                    speak("Sir, what should i search on google")
+                    speak("what should i search on google?")
                     cm = self.takeCommand().lower()
-                    webbrowser.open(f"{cm}")
-                    speak(f"searching on google about {cm} ..")
+                    openGoogle(cm)
             
             elif 'open instagram' in query:
                     webbrowser.open("instagram.com")
                     speak("opening instagram..")
 
             elif 'open facebook' in query:
-                speak("opening facebook..")
                 webbrowser.open("facebook.com")
+                speak("opening facebook..")
                 
             elif 'open twitter' in query:
                     webbrowser.open("twitter.com")
@@ -316,15 +401,25 @@ class MainThread(QThread):
                     recipient_phone = phone[contact_name]
                     now = datetime.datetime.now()
                     # Calculate the time 15 seconds ahead
-                    future_time = now + datetime.timedelta(seconds=30)
+                    future_time = now + datetime.timedelta(seconds=15)
                     hour = int(future_time.strftime("%H"))
                     minute = int(future_time.strftime('%M'))
-                    kit.sendwhatmsg(recipient_phone,msg,hour,minute)
+                    print(hour)
+                    print(minute)
+                    kit.sendwhatmsg_instantly(recipient_phone, msg)
+                    # Sending the message
+                    # message = client.messages.create(
+                    #     from_='whatsapp:+14155238886',  # Twilio sandbox number
+                    #     body={msg},
+                    #     to=f'whatsapp:{recipient_phone}'  # Your WhatsApp number
+                    # )
+                    # speak(f"message has been sent to {contact_name} sir")
+                    
                 else:
                     speak(f"Sorry sir , the {contact_name} is not in your contant list")
 
             elif "play song on youtube" in query:
-                kit.playonyt("cheques")
+                kit.playonyt("brown munde")
             
             elif "email to" in query:
                 try:
@@ -436,7 +531,7 @@ class MainThread(QThread):
                 speak("Please wait sir, fetching the latest news")
                 news()    
             
-            elif "can you tweet" in query:
+            elif "can you tweet" in query or "make a tweet" in query:
                 speak("Sir, What should i tweet")
                 cmd = self.takeCommand().lower()
                 tweet(cmd)
@@ -598,6 +693,12 @@ class MainThread(QThread):
                 if notepad_process:
                   notepad_process.kill()  # Close Notepad if it's open
                 break
+            
+            elif "weather today" in query or "weather" in query:
+                city = "davanagere"  # replace with the name of the city you want to get the weather for
+                weather_info = get_weather(city)
+                speak("The current weather in " + city + " is as follows: " + weather_info)
+                
           
             elif "write" in query or "prove" in query:
                 if notepad_process:
@@ -618,60 +719,85 @@ class MainThread(QThread):
              result = generate_content(query, api_key)
              if result:
                 clean_result = result.replace('*', '')  # Remove asterisks
-                print(clean_result)
-                speak(clean_result)
+                lines = clean_result.split('\n')  # Split the content into lines
+                limited_result = '\n'.join(lines[:4])  # Join the first three lines
+                print(limited_result)
+                speak(limited_result)
              
             speak("sir, do you have any other work")
 
     def takeCommand(self):
         r = sr.Recognizer()
         with sr.Microphone() as source:
-            print("Listening.......")
+            self.update_status_callback("Status: Listening...")
             r.pause_threshold = 1
             audio = r.listen(source)
         try:
-            print("Recognizing.....")
+            self.update_status_callback("Status: Recognizing...")
             query = r.recognize_google(audio, language='en-in')
-            print(f"User Said: {query}\n")
+            self.update_status_callback(f"User Said: {query}")
         except Exception as e:
-            print("Say that again please....")
+            self.update_status_callback("Say that again please....")
             return "None"
         return query
-    def select_image(self):
-        # Function to open a file dialog and select an image
-        file_path, _ = QFileDialog.getOpenFileName(None, "Select Image", "", "Image Files (*.png *.jpg *.jpeg *.gif *.bmp);;All Files (*)")
-        return file_path
-
-startExecution = MainThread()
 
 class Main(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.ui = Ui_MainWindow()
-        self.ui.setupUi(self)
-        self.ui.pushButton.clicked.connect(self.startTask)
-        self.ui.pushButton_2.clicked.connect(self.close)
-        self.main_thread = MainThread()
-     
+
+        self.setWindowTitle("JARVIS")
+        self.setGeometry(100, 100, 800, 600)  # Set the window size
+
+        font = QFont("Arial", 16)  # Set font size and type
+
+        self.run_button = QPushButton("Run")
+        self.run_button.setFont(font)
+        self.run_button.setStyleSheet("background-color: blue; color: black; border: 2px solid black; border-radius: 5px; padding: 10px;")
+        
+        self.exit_button = QPushButton("Exit")
+        self.exit_button.setFont(font)
+        self.exit_button.setStyleSheet("background-color: red; color: white; border: 2px solid black; border-radius: 5px; padding: 10px;")
+        
+        self.status_label = QLabel("Status: Waiting for command...")
+        self.status_label.setFont(font)
+        self.status_label.setStyleSheet("padding: 10px;")
+
+        self.output_label = QLabel("Output: None")
+        self.output_label.setFont(font)
+        self.output_label.setStyleSheet("padding: 10px; border: 1px solid gray; border-radius: 5px;")
+        self.output_label.setWordWrap(True)
+        self.output_label.setFixedWidth(750)  # Adjust width as needed
+
+        self.user_said_label = QLabel("User Said: None")
+        self.user_said_label.setFont(font)
+        self.user_said_label.setStyleSheet("padding: 10px; border: 1px solid gray; border-radius: 5px;")
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.run_button)
+        layout.addWidget(self.exit_button)
+        layout.addWidget(self.status_label)
+        layout.addWidget(self.output_label)
+        layout.addWidget(self.user_said_label)
+
+        container = QWidget()
+        container.setLayout(layout)
+        self.setCentralWidget(container)
+
+        self.run_button.clicked.connect(self.startTask)
+        self.exit_button.clicked.connect(self.close)
+
+        self.main_thread = MainThread(self.update_status)
+
     def startTask(self):
-        self.ui.movie = QtGui.QMovie("7LP8.gif")
-        self.ui.label.setMovie(self.ui.movie)
-        self.ui.movie.start()
-        self.ui.movie = QtGui.QMovie("install.gif")
-        self.ui.label_2.setMovie(self.ui.movie)
-        self.ui.movie.start()
-        timer = QTimer(self)
-        timer.timeout.connect(self.showTime)
-        timer.start(1000)
-        startExecution.start()
-    
-    def showTime(self):
-        current_time = QTime.currentTime()
-        current_date = QDate.currentDate()
-        label_time = current_time.toString('hh:mm:ss')
-        lable_date = current_date.toString(Qt.ISODate)
-        self.ui.label_4.setText(label_time)
-        self.ui.label_3.setText(lable_date)
+        self.main_thread.start()
+
+    def update_status(self, status):
+        if "User Said" in status:
+            self.user_said_label.setText(status)
+        elif "Output" in status:
+            self.output_label.setText(status)
+        else:
+            self.status_label.setText(status)
 
 app = QApplication(sys.argv)
 jarvis = Main()
